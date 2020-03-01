@@ -235,6 +235,7 @@ var USERS_KEY = "users", GROUPS_KEY = "groups";
 
 /**
  * Retrieves data from cache as a Promise or refreshes the data with the provided Promise factory.
+ * @param {object} site - The current site
  * @param {string} key - The cache key
  * @param {number} maxAge - The maximum age of the cache entry, if older the data will be refreshed
  * @param {function} factory - A function returning a Promise that resolves with the new cache entry or rejects
@@ -296,6 +297,10 @@ function requestUsers (req, res, next) {
         };
       });
       newCache = site.uniqueEmails(newCache);
+      // add all group to everyone
+      newCache.forEach(function (user) {
+        user.attributes.memberof.push(site.fnGroupDn({cn: "all"}))
+      });
       // Virtual admin user
       if (site.ldap_password !== undefined) {
         var cn = config.ldap_user;
@@ -331,7 +336,7 @@ function requestUsers (req, res, next) {
 function requestGroups (req, res, next) {
   var site = req.site;
   req.groupsPromise = getCached(site, GROUPS_KEY, config.cache_lifetime, function () {
-    return apiPost(site, "getGroupsData").then(function (results) {
+    return apiPost(site, "getGroupsData").then(async function (results) {
       var newCache = results.groups.map(function (v) {
         var cn = v.bezeichnung;
         var groupType = v.gruppentyp;
@@ -349,6 +354,31 @@ function requestGroups (req, res, next) {
           }
         };
       });
+      // Virtual "all" group
+      {
+        var cn = "all";
+        var reqUsers = {
+          site: req.site
+        };
+        requestUsers(reqUsers, null, function () {});
+        // add all group asynchronously
+        await reqUsers.usersPromise.then(function (users) {
+          newCache.push({
+            dn: site.compatTransform(site.fnGroupDn({cn: cn})),
+            attributes: {
+              cn: cn,
+              displayname: cn,
+              id: 9999990,
+              nsuniqueid: "g" + 9999990,
+              objectclass: ["group", "CTGroup" + cn.charAt(0).toUpperCase() + cn.slice(1)],
+              uniquemember: (users || []).map(function (user) {
+                return site.compatTransform(site.fnUserDn({cn: user.attributes.cn}));
+              })
+            }
+          });
+        });
+      }
+
       var size = newCache.length;
       if (config.debug && size > 0) {
         console.log("[DEBUG] Updated groups: " + size);
