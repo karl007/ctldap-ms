@@ -55,12 +55,12 @@ Object.keys(config.sites).map(function(sitename, index) {
       return s;
     };
   }
-  if (site.group_cn_lower_case || ((site.group_cn_lower_case === undefined) && config.group_cn_lower_case)) {
-    site.compatTransformGroupCn = function (s) {
+  if (site.cn_lower_case || ((site.cn_lower_case === undefined) && config.cn_lower_case)) {
+    site.compatTransformCn = function (s) {
       return s.toLowerCase();
     };
   } else {
-    site.compatTransformGroupCn = function (s) {
+    site.compatTransformCn = function (s) {
       return s;
     };
   }
@@ -284,10 +284,10 @@ function requestUsers (req, res, next) {
         return {
           dn: site.compatTransform(site.fnUserDn({ cn: cn })),
           attributes: {
-            cn: cn,
+            cn: site.compatTransformCn(cn),
             displayname: v.vorname + " " + v.name,
             id: String(v.id),
-            uid: cn,
+            uid: site.compatTransformCn(cn),
             nsuniqueid: "u" + v.id,
             givenname: v.vorname,
             street: v.strasse,
@@ -316,10 +316,10 @@ function requestUsers (req, res, next) {
         newCache.push({
           dn: site.compatTransform(site.fnUserDn({ cn: cn })),
           attributes: {
-            cn: cn,
+            cn: site.compatTransformCn(cn),
             displayname: "LDAP Administrator",
             id: 0,
-            uid: cn,
+            uid: site.compatTransformCn(cn),
             nsuniqueid: "u0",
             givenname: "LDAP Administrator",
             objectclass: ['CTPerson'],
@@ -354,7 +354,7 @@ function requestGroups (req, res, next) {
         return {
           dn: site.compatTransform(site.fnGroupDn({ cn: cn })),
           attributes: {
-            cn: site.compatTransformGroupCn(cn),
+            cn: site.compatTransformCn(cn),
             displayname: v.bezeichnung,
             id: v.id,
             nsuniqueid: "g" + v.id,
@@ -377,7 +377,7 @@ function requestGroups (req, res, next) {
           newCache.push({
             dn: site.compatTransform(site.fnGroupDn({cn: cn})),
             attributes: {
-              cn: site.compatTransformGroupCn(cn),
+              cn: site.compatTransformCn(cn),
               displayname: cn,
               id: 9999990,
               nsuniqueid: "g" + 9999990,
