@@ -344,8 +344,10 @@ function requestUsers (req, res, next) {
  */
 function requestGroups (req, res, next) {
   var site = req.site;
+  if (site.addLeaderGroups)
+    var data = {addLeaderGroups: site.addLeaderGroups};
   req.groupsPromise = getCached(site, GROUPS_KEY, config.cache_lifetime, function () {
-    return apiPost(site, "getGroupsData").then(async function (results) {
+    return apiPost(site, "getGroupsData", data || {}).then(async function (results) {
       var newCache = results.groups.map(function (v) {
         var cn = v.bezeichnung;
         var groupType = v.gruppentyp;
