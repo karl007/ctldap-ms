@@ -55,6 +55,15 @@ Object.keys(config.sites).map(function(sitename, index) {
       return s;
     };
   }
+  if (site.group_cn_lower_case || ((site.group_cn_lower_case === undefined) && config.group_cn_lower_case)) {
+    site.compatTransformGroupCn = function (s) {
+      return s.toLowerCase();
+    };
+  } else {
+    site.compatTransformGroupCn = function (s) {
+      return s;
+    };
+  }
   if (site.email_lower_case || ((site.email_lower_case === undefined) && config.email_lower_case)) {
     site.compatTransformEmail = function (s) {
       return s ? s.toLowerCase() : s;
@@ -343,7 +352,7 @@ function requestGroups (req, res, next) {
         return {
           dn: site.compatTransform(site.fnGroupDn({ cn: cn })),
           attributes: {
-            cn: cn,
+            cn: site.compatTransformGroupCn(cn),
             displayname: v.bezeichnung,
             id: v.id,
             nsuniqueid: "g" + v.id,
@@ -366,7 +375,7 @@ function requestGroups (req, res, next) {
           newCache.push({
             dn: site.compatTransform(site.fnGroupDn({cn: cn})),
             attributes: {
-              cn: cn,
+              cn: site.compatTransformGroupCn(cn),
               displayname: cn,
               id: 9999990,
               nsuniqueid: "g" + 9999990,
